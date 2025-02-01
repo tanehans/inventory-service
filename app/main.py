@@ -3,7 +3,10 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-#Produktklasser
+# =============================
+#         VÅRA KLASSER
+# =============================
+
 class Product(BaseModel):
     id: int
     productCode: str
@@ -12,18 +15,23 @@ class Product(BaseModel):
 class ProductDeleteRequest(BaseModel):
     productCode: str 
 
-#Hårdkodad data
+
+# =============================
+#       HÅRDKODAD DATA
+# =============================
+
 inventory = {
     1: Product(id=1, productCode="Karhu", saldo=100),
     2: Product(id=2, productCode="Sandels", saldo=150),
     3: Product(id=3, productCode="Vatten", saldo=7000)
 }
 
-###                 ###
-### VÅRA ENDPOINTS  ###
-###       >.<       ###
+# =============================
+#           ENDPOINTS
+#              >.<
+# =============================
 
-#Returnerar alla items i vårt inventory
+#hämtar alla produkter
 @app.get("/inventory", response_model=list[Product])
 def get_inventory():
     return list(inventory.values())
