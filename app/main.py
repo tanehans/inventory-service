@@ -15,6 +15,9 @@ class Product(BaseModel):
 class ProductDeleteRequest(BaseModel):
     productCode: str 
 
+class IncreaseStockRequest(BaseModel):
+    productCode: str
+    quantity: int
 
 # =============================
 #       HÅRDKODAD DATA
@@ -54,3 +57,14 @@ def delete_product(request: ProductDeleteRequest):
     
     deleted_product = inventory.pop(product_id)
     return {"message": f"Produkten {deleted_product.productCode} är borttagen"}
+
+#ökar lagersaldo på specifik produkt
+@app.patch("/inventory/increase", response_model=Product)
+def increase_stock(request: IncreaseStockRequest):
+    product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
+    if product_id is None:
+        raise HTTPException(status_code=404, detail="Produkten finns inte")
+    product = inventory[product_id]
+    product.stock += request.quantity
+    inventory[product_id] = product
+    return product
