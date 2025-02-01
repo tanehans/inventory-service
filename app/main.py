@@ -17,11 +17,21 @@ inventory = {
     3: Product(id=2, productCode="Pepsi max", saldo=7000)
 }
 
-###
-### VÅRA ENDPOINTS
-###
+
+
+###                 ###
+### VÅRA ENDPOINTS  ###
+###       >.<       ###
 
 #Returnerar alla items i vårt inventory
 @app.get("/inventory", response_model=list[Product])
 def get_inventory():
     return list(inventory.values())
+
+#Lägger till en ny produkt till inventory
+@app.post("/inventory", response_model=Product, status_code=201)
+def create_product(product: Product):
+    if product.id in inventory:
+        raise HTTPException(status_code=400, detail="Produkt med samma id finns redan :(")
+    inventory[product.id] = product
+    return product
