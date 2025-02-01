@@ -10,7 +10,7 @@ app = FastAPI()
 class Product(BaseModel):
     id: int
     productCode: str
-    saldo: int
+    stock: int
 
 class ProductDeleteRequest(BaseModel):
     productCode: str 
@@ -21,9 +21,9 @@ class ProductDeleteRequest(BaseModel):
 # =============================
 
 inventory = {
-    1: Product(id=1, productCode="Karhu", saldo=100),
-    2: Product(id=2, productCode="Sandels", saldo=150),
-    3: Product(id=3, productCode="Vatten", saldo=7000)
+    1: Product(id=1, productCode="0001", stock=100),
+    2: Product(id=2, productCode="0002", stock=150),
+    3: Product(id=3, productCode="0003", stock=7000)
 }
 
 # =============================
