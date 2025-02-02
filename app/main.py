@@ -64,6 +64,8 @@ def increase_stock(request: StockRequest):
     product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
     if product_id is None:
         raise HTTPException(status_code=404, detail="Produkten finns inte")
+    if request.quantity < 0:
+        raise HTTPException(status_code=400, detail="Mängden måste vara större än 0")
     product = inventory[product_id]
     product.stock += request.quantity
     inventory[product_id] = product
@@ -75,6 +77,8 @@ def decrease_stock(request: StockRequest):
     product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
     if product_id is None:
         raise HTTPException(status_code=404, detail="Produkten finns inte")
+    if request.quantity < 0:
+        raise HTTPException(status_code=400, detail="Mängden måste vara större än 0")
     product = inventory[product_id]
     if product.stock < request.quantity:
         raise HTTPException(status_code=400, detail="Inte tillräckligt med lagersaldo")
