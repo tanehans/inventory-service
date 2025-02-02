@@ -1,20 +1,4 @@
-# rahti2-fastapi 
+# Vad servicen gör
+Servicen hanterar lagersaldot för produkterna och erbjuder endpoints för att hämta alla produkter, lägga till eller ta bort en produkt samt öka eller minska lagersaldot för specifika produkter.
 
-### For deployment to Rahti2
-
-Note: OpenShift wants the main branch to be named *master* by default, you have two options:
-1. Push to origin/master to deploy
-2. Change the setting in Openshift to *main*:    
-    Edit BuildConfig ==> Show advanced git options ==> Git reference: `main`
-
-
-See also: https://fastapi.tiangolo.com/deployment/docker/
-
-
-
-### For local real-time development
-
-Rename `.env-example` to `.env` to override the `MODE=production`set in the `Dockerfile`. Note that this needs a valueless declaration of `MODE` in `docker-compose.yml`
-
-To run the container locally:
-`docker-compose up --build`
+Servicens endpoints kan man hitta och köra här (DEV-MILJÖ): https://dev-inventory-service-inventory-service.2.rahtiapp.fi/docs 
