@@ -15,7 +15,7 @@ class Product(BaseModel):
 class ProductDeleteRequest(BaseModel):
     productCode: str 
 
-class IncreaseStockRequest(BaseModel):
+class StockRequest(BaseModel):
     productCode: str
     quantity: int
 
@@ -60,11 +60,24 @@ def delete_product(request: ProductDeleteRequest):
 
 #ökar lagersaldo på specifik produkt
 @app.patch("/inventory/increase", response_model=Product)
-def increase_stock(request: IncreaseStockRequest):
+def increase_stock(request: StockRequest):
     product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
     if product_id is None:
         raise HTTPException(status_code=404, detail="Produkten finns inte")
     product = inventory[product_id]
     product.stock += request.quantity
+    inventory[product_id] = product
+    return product
+
+#minskar lagersaldo på specifik produkt, kollar först om det finns tillräckligt med lagersaldo
+@app.post("/inventory/decrease", response_model=Product)
+def decrease_stock(request: StockRequest):
+    product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
+    if product_id is None:
+        raise HTTPException(status_code=404, detail="Produkten finns inte")
+    product = inventory[product_id]
+    if product.stock < request.quantity:
+        raise HTTPException(status_code=400, detail="Inte tillräckligt med lagersaldo")
+    product.stock -= request.quantity
     inventory[product_id] = product
     return product
