@@ -1,51 +1,18 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List
+from classes import  *
+from inventory import inventory
 
 app = FastAPI()
 
 # =============================
-#         VÅRA KLASSER
+#           INVENTORY
+#         get/post/delete      
 # =============================
 
-class Product(BaseModel):
-    id: int
-    productCode: str
-    stock: int
-
-class ProductDeleteRequest(BaseModel):
-    productCode: str 
-
-class StockRequest(BaseModel):
-    productCode: str
-    quantity: int
-
-class DecreaseStockMultipleRequest(BaseModel):
-    email: str
-    items: list[StockRequest]
-    # orderId: int
-
-# =============================
-#       HÅRDKODAD DATA
-# =============================
-
-inventory = {
-    1: Product(id=1, productCode="0001", stock=100),
-    2: Product(id=2, productCode="0002", stock=150),
-    3: Product(id=3, productCode="0003", stock=7000)
-}
-
-# =============================
-#           ENDPOINTS
-#              >.<
-# =============================
-
-#hämtar alla produkter
 @app.get("/inventory", response_model=list[Product])
 def get_inventory():
     return list(inventory.values())
 
-#Lägger till en ny produkt
 @app.post("/inventory", response_model=Product, status_code=201)
 def create_product(product: Product):
     if product.id in inventory:
@@ -53,18 +20,19 @@ def create_product(product: Product):
     inventory[product.id] = product
     return product
 
-#raderar en produkt baserat på produktkoden
 @app.delete("/inventory", status_code=200)
 def delete_product(request: ProductDeleteRequest):
     product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
-
     if product_id is None:
         raise HTTPException(status_code=404, detail="Produkten finns inte")
-    
     deleted_product = inventory.pop(product_id)
     return {"message": f"Produkten {deleted_product.productCode} är borttagen"}
 
-#ökar lagersaldo på specifik produkt
+# =============================
+#        INVENTORY SALDO
+#        öka/sänka saldo
+# =============================
+
 @app.patch("/inventory/increase", response_model=Product)
 def increase_stock(request: StockRequest):
     product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
@@ -77,7 +45,6 @@ def increase_stock(request: StockRequest):
     inventory[product_id] = product
     return product
 
-#minskar lagersaldo på specifik produkt, kollar först om det finns tillräckligt med lagersaldo
 @app.post("/inventory/decrease", response_model=list[Product])
 def decrease_stock(request: DecreaseStockMultipleRequest):
     updated_products = []
@@ -94,16 +61,15 @@ def decrease_stock(request: DecreaseStockMultipleRequest):
         inventory[product_id] = product
         updated_products.append(product)
     
-    #skickar email med shippingbekräftelse
     send_shipping_confirmation(request.email, updated_products)
-    
     return updated_products
 
-def send_shipping_confirmation(email: str, products: List[Product]):
-    # vänta 5 sekunder?
+# =============================
+#           SHIPPING
+#     Kalla på shipping api
+# =============================
+
+def send_shipping_confirmation(email: str, products: list[Product]):
     print(f"Skickar shippingbekräftelse till {email} för produkterna:")
     for product in products:
         print(f"{product.productCode}: {product.stock}st")
-        
-    #todo: skicka request till email API
-    pass
