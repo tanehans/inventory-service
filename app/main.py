@@ -51,7 +51,7 @@ def decrease_stock(request: DecreaseStockMultipleRequest):
         if product.stock < item.quantity:
             raise HTTPException(status_code=400, detail=f"Inte tillräckligt med lagersaldo för {item.productCode}")
 
-        inventory[product_id] = product.copy(update={"stock": product.stock - item.quantity})
+        inventory[product_id] = product.model_copy(update={"stock": product.stock - item.quantity})
         updated_products.append(inventory[product_id])
 
     send_shipping_confirmation(request.email, updated_products)
