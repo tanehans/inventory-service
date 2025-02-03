@@ -22,3 +22,37 @@ def ensure_valid_quantity(quantity: int):
     """Validera att kvantiteten är större än 0, annars kasta ett HTTP 400-fel"""
     if quantity < 0:
         raise HTTPException(status_code=400, detail="Mängden måste vara större än 0")
+    
+def taivas():
+    return """Katseet ylös luokaa veljet, aika tullut on,
+Meidän edessämme vahvinkin on voimaton.
+Aika pysähtyy ja siirtyy vuoret paikoiltaan,
+Me emme järky vaikka tulta satais päälle maan.
+Heikoille voi olla liikaa kutsu metallin,
+Muttei niille joita ohjaa vaisto soturin!
+Taivas lyö tulta yläpuolellamme,
+Kaikuu kallioilla ääni totuuden.
+Verivalan taika on aina suojanamme,
+Tuo merkki metallisen veljeyden!
+Missä liikummekin aina meidät huomataan,
+Kunnia ja voima saavat meihin uskomaan.
+Tulivana seuraa joukkoamme mahtavaa,
+On luonto puolellamme tukemassa sanomaa:
+Heikoille voi olla liikaa kutsu metallin,
+Muttei niille joita ohjaa vaisto soturin!
+Taivas lyö tulta yläpuolellamme,
+Kaikuu kallioilla ääni totuuden.
+Verivalan taika on aina suojanamme,
+Tuo merkki metallisen veljeyden!
+Taivas lyö tulta yläpuolellamme,
+Kaikuu kallioilla ääni totuuden.
+Taivas lyö tulta yläpuolellamme,
+Kaikuu kallioilla ääni totuuden.
+Verivalan taika on aina suojanamme,
+Tuo merkki metallisen veljeyden!
+Taivas lyö tulta!
+Taivas lyö tulta!
+Taivas lyö tulta yläpuolellamme,
+Kaikuu kallioilla ääni totuuden.
+Verivalan taika on aina suojanamme,
+Tuo merkki metallisen veljeyden!"""
