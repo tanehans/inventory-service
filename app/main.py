@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
@@ -18,6 +19,11 @@ class ProductDeleteRequest(BaseModel):
 class StockRequest(BaseModel):
     productCode: str
     quantity: int
+
+class DecreaseStockMultipleRequest(BaseModel):
+    email: str
+    items: list[StockRequest]
+    # orderId: int
 
 # =============================
 #       HÅRDKODAD DATA
@@ -72,16 +78,32 @@ def increase_stock(request: StockRequest):
     return product
 
 #minskar lagersaldo på specifik produkt, kollar först om det finns tillräckligt med lagersaldo
-@app.post("/inventory/decrease", response_model=Product)
-def decrease_stock(request: StockRequest):
-    product_id = next((key for key, product in inventory.items() if product.productCode == request.productCode), None)
-    if product_id is None:
-        raise HTTPException(status_code=404, detail="Produkten finns inte")
-    if request.quantity < 0:
-        raise HTTPException(status_code=400, detail="Mängden måste vara större än 0")
-    product = inventory[product_id]
-    if product.stock < request.quantity:
-        raise HTTPException(status_code=400, detail="Inte tillräckligt med lagersaldo")
-    product.stock -= request.quantity
-    inventory[product_id] = product
-    return product
+@app.post("/inventory/decrease", response_model=list[Product])
+def decrease_stock(request: DecreaseStockMultipleRequest):
+    updated_products = []
+    for item in request.items:
+        product_id = next((key for key, product in inventory.items() if product.productCode == item.productCode), None)
+        if product_id is None:
+            raise HTTPException(status_code=404, detail=f"Produkten {item.productCode} finns inte")
+        if item.quantity < 0:
+            raise HTTPException(status_code=400, detail="Mängden måste vara större än 0")
+        product = inventory[product_id]
+        if product.stock < item.quantity:
+            raise HTTPException(status_code=400, detail=f"Inte tillräckligt med lagersaldo för {item.productCode}")
+        product.stock -= item.quantity
+        inventory[product_id] = product
+        updated_products.append(product)
+    
+    #skickar email med shippingbekräftelse
+    send_shipping_confirmation(request.email, updated_products)
+    
+    return updated_products
+
+def send_shipping_confirmation(email: str, products: List[Product]):
+    # vänta 5 sekunder?
+    print(f"Skickar shippingbekräftelse till {email} för produkterna:")
+    for product in products:
+        print(f"{product.productCode}: {product.stock}st")
+        
+    #todo: skicka request till email API
+    pass
