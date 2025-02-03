@@ -14,11 +14,11 @@ def get_inventory():
     return list(inventory.values())
 
 @app.post("/inventory", response_model=Product, status_code=201)
-def create_product(product: Product):
-    if product.id in inventory:
-        raise HTTPException(status_code=400, detail="Produkt med samma id finns redan :(")
-    inventory[product.id] = product
-    return product
+def create_product(product: ProductCreate):  # Använder nu ProductCreate
+    new_id = max(inventory.keys(), default=0) + 1
+    new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
+    inventory[new_id] = new_product
+    return new_product
 
 @app.delete("/inventory", status_code=200)
 def delete_product(request: ProductDeleteRequest):

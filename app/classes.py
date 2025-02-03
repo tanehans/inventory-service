@@ -16,3 +16,7 @@ class Product(BaseModel):
     id: int
     productCode: str
     stock: int
+
+class ProductCreate(BaseModel):
+    productCode: str
+    stock: int
