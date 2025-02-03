@@ -1,2 +1,5 @@
 fastapi[standard]
 pydantic
+pyjwt
+passlib[bcrypt]
+python-jose[cryptography]
