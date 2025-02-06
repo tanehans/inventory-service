@@ -1,4 +1,4 @@
-from classes import Product
+from app.classes import  *
 
 #Hårdkodad inventory - byts ut mot databas sen
 inventory = {
