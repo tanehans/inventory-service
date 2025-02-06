@@ -15,7 +15,7 @@ def get_inventory():
     return list(inventory.values())
 
 @app.post("/inventory", response_model=Product, status_code=201)
-def create_product(product: Product):
+def create_product(product: ProductCreate):
     new_id = max(inventory.keys(), default=0) + 1  
     new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
     inventory[new_id] = new_product
