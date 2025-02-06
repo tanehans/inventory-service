@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
-from classes import  *
-from inventory import inventory
-from utils import *
+from app.classes import  *
+from app.inventory import inventory
+from app.utils import *
 
 app = FastAPI()
 
