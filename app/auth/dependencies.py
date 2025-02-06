@@ -13,9 +13,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
-    '''
-    Get_current_user autentiserar JWT-token och kontrollerar om det är giltigt.
-    '''
+    """
+    Hämtar den aktuella användaren baserat på den angivna JWT-token.
+    Argument:
+        token (str): JWT-token som tillhandahålls av användaren.
+    Returnerar:
+        dict: En ordbok som innehåller användar-ID och roller.
+    Undantag:
+        HTTPException: Om token är ogiltig, utgången eller om användar-ID inte hittas i token-payload.
+    """
     credentials_exception = HTTPException(
         status_code=HTTP_401_UNAUTHORIZED,
         detail="Kunde inte validera dina uppgifter",
@@ -23,7 +29,29 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     )
 
     try:
-        jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return "Success"
-    except jwt.PyJWTError:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        return {"user_id": user_id, "roles": payload.get("roles", [])}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Token har gått ut")
+    except jwt.InvalidTokenError:
         raise credentials_exception
+
+def get_current_admin_user(user: dict = Depends(get_current_user)):
+    """
+    Hämtar den nuvarande användaren och kontrollerar om användaren har admin-behörighet.
+
+    Args:
+        user (dict): Användarens information som hämtas från Depends(get_current_user).
+
+    Raises:
+        HTTPException: Om användaren inte har admin-behörighet, kastas ett undantag med statuskoden 401 och meddelandet "Åtkomst nekad".
+
+    Returns:
+        dict: Användarens information om användaren har admin-behörighet.
+    """
+    if "admin" not in user["roles"]:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Åtkomst nekad")
+    return user
