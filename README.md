@@ -41,7 +41,7 @@ Servicens endpoints kan man hitta och köra här (DEV-MILJÖ): https://dev-inven
 ```
 
 # To-do
--Ändra ```inventory/increase``` att köra en POST istället, det matchar bättre med decrease endpointen
--Stöda arrays med POST och DELETE endpointen så man kan skicka/radera flera produkter på samma kallelse
--Ändra så GET använder samma objekt klass som POST (dvs ta bort att id fetchas)
--Lägga in unit tests för resterande endpoints
+- Ändra ```inventory/increase``` att köra en POST istället, det matchar bättre med decrease endpointen
+- Stöda arrays med POST och DELETE endpointen så man kan skicka/radera flera produkter på samma kallelse
+- Ändra så GET använder samma objekt klass som POST (dvs ta bort att id fetchas)
+- Lägga in unit tests för resterande endpoints
