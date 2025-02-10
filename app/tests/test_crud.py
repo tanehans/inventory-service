@@ -1,10 +1,12 @@
 import pytest
+import json
 from fastapi.testclient import TestClient
 from app.main import app
 from app.inventory import inventory
 from app.classes import Product
 
-#denna resettar inventoryt för varje test
+
+#denna resettar inventory för varje test, ÄNDRA INTE
 @pytest.fixture(autouse=True)
 def reset_inventory():
     inventory.clear()
@@ -34,3 +36,14 @@ def test_create_product():
     assert data["productCode"] == "0004"
     assert data["stock"] == 200
     assert "id" in data
+
+def test_delete_existing_product():
+    payload = {"productCode": "0002"}
+    response = client.request("DELETE", "/inventory", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "0002" in data["message"]
+
+    response = client.get("/inventory")
+    data = response.json()
+    assert not any(prod["productCode"] == "0002" for prod in data)
