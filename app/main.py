@@ -16,10 +16,22 @@ def get_inventory():
 
 @app.post("/inventory", response_model=Product, status_code=201)
 def create_product(product: ProductCreate):
+    check_if_product_exists(inventory, product.productCode)  
     new_id = max(inventory.keys(), default=0) + 1  
     new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
     inventory[new_id] = new_product
     return new_product
+
+@app.post("/inventory/multiple", response_model=list[Product], status_code=201)
+def create_multiple_products(products: list[ProductCreate]):
+    created = []
+    for product in products:
+        check_if_product_exists(inventory, product.productCode) 
+        new_id = max(inventory.keys(), default=0) + 1
+        new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
+        inventory[new_id] = new_product
+        created.append(new_product)
+    return created
 
 @app.delete("/inventory", status_code=200)
 def delete_product(request: ProductDeleteRequest):
@@ -27,17 +39,28 @@ def delete_product(request: ProductDeleteRequest):
     deleted_product = inventory.pop(product_id)
     return {"message": f"Produkten {deleted_product.productCode} är borttagen"}
 
+
+@app.delete("/inventory/multiple", response_model=list[Product], status_code=200)
+def delete_multiple_products(request: ProductDeleteMultipleRequest):
+    deleted = []
+    for code in request.productCodes:
+        product_id = check_product_exists(inventory, code)
+        deleted.append(inventory.pop(product_id))
+    return deleted
+
+
 # =============================
 #        INVENTORY SALDO
 #        öka/sänka saldo
 # =============================
 
-@app.patch("/inventory/increase", response_model=Product)
+@app.post("/inventory/increase", response_model=Product)
 def increase_stock(request: StockRequest):
     product_id = check_product_exists(inventory, request.productCode)
     ensure_valid_quantity(request.quantity)
 
-    inventory[product_id] = inventory[product_id].model_copy(update={"stock": inventory[product_id].stock + request.quantity})
+    inventory[product_id] = inventory[product_id].model_copy(
+        update={"stock": inventory[product_id].stock + request.quantity})
     return inventory[product_id]
 
 @app.post("/inventory/decrease", response_model=list[Product])
