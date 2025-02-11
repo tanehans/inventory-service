@@ -32,12 +32,13 @@ def delete_product(request: ProductDeleteRequest):
 #        öka/sänka saldo
 # =============================
 
-@app.patch("/inventory/increase", response_model=Product)
+@app.post("/inventory/increase", response_model=Product)
 def increase_stock(request: StockRequest):
     product_id = check_product_exists(inventory, request.productCode)
     ensure_valid_quantity(request.quantity)
 
-    inventory[product_id] = inventory[product_id].model_copy(update={"stock": inventory[product_id].stock + request.quantity})
+    inventory[product_id] = inventory[product_id].model_copy(
+        update={"stock": inventory[product_id].stock + request.quantity})
     return inventory[product_id]
 
 @app.post("/inventory/decrease", response_model=list[Product])
