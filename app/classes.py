@@ -20,3 +20,6 @@ class Product(BaseModel):
 class ProductCreate(BaseModel):
     productCode: str
     stock: int
+
+class ProductDeleteMultipleRequest(BaseModel):
+    productCodes: list[str]
