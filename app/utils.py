@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from typing import Dict, Optional
 from app.classes import  *
+from app.inventory import *
 
 # =============================
 #  Om ni har funktioner som 
@@ -22,6 +23,14 @@ def ensure_valid_quantity(quantity: int):
     """Validera att kvantiteten är större än 0, annars kasta ett HTTP 400-fel"""
     if quantity < 0:
         raise HTTPException(status_code=400, detail="Mängden måste vara större än 0")
+    
+def check_if_product_exists(inventory: Dict[int, Product], product_code: str):
+    """skickar ett HTTP 400-fel om en produkt med samma produktkod redan finns."""
+    if any(existing.productCode == product_code for existing in inventory.values()):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Produkten med produktkod {product_code} finns redan."
+        )
     
 def taivas():
     return """Katseet ylös luokaa veljet, aika tullut on,

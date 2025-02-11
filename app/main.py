@@ -16,6 +16,7 @@ def get_inventory():
 
 @app.post("/inventory", response_model=Product, status_code=201)
 def create_product(product: ProductCreate):
+    check_if_product_exists(inventory, product.productCode)  
     new_id = max(inventory.keys(), default=0) + 1  
     new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
     inventory[new_id] = new_product
@@ -25,6 +26,7 @@ def create_product(product: ProductCreate):
 def create_multiple_products(products: list[ProductCreate]):
     created = []
     for product in products:
+        check_if_product_exists(inventory, product.productCode) 
         new_id = max(inventory.keys(), default=0) + 1
         new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
         inventory[new_id] = new_product
