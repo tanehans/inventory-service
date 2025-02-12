@@ -15,10 +15,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def get_current_user(token: str = Depends(oauth2_scheme)):
     """
     Hämtar den aktuella användaren baserat på den angivna JWT-token.
+    
     Argument:
         token (str): JWT-token som tillhandahålls av användaren.
+    
     Returnerar:
-        dict: En ordbok som innehåller användar-ID och roller.
+        dict: En ordbok som innehåller användar-ID, e-post och roller.
+    
     Undantag:
         HTTPException: Om token är ogiltig, utgången eller om användar-ID inte hittas i token-payload.
     """
@@ -31,13 +34,18 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id: str = payload.get("sub")
-        if user_id is None:
+        email: str = payload.get("email")
+        
+        if user_id is None or email is None:
             raise credentials_exception
-        return {"user_id": user_id, "roles": payload.get("roles", [])}
+        
+        return {"user_id": user_id, "email": email, "roles": payload.get("roles", [])}
+    
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Token har gått ut")
     except jwt.InvalidTokenError:
         raise credentials_exception
+
 
 def get_current_admin_user(user: dict = Depends(get_current_user)):
     """
