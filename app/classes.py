@@ -1,0 +1,25 @@
+from pydantic import BaseModel
+from typing import List
+
+class StockRequest(BaseModel):
+    productCode: str
+    quantity: int
+
+class ProductDeleteRequest(BaseModel):
+    productCode: str 
+
+class DecreaseStockMultipleRequest(BaseModel):
+    email: str
+    items: List[StockRequest]
+
+class Product(BaseModel):
+    id: int
+    productCode: str
+    stock: int
+
+class ProductCreate(BaseModel):
+    productCode: str
+    stock: int
+
+class ProductDeleteMultipleRequest(BaseModel):
+    productCodes: list[str]
