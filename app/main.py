@@ -38,14 +38,16 @@ def delete_products(request: ProductDeleteMultipleRequest):
 #        öka/sänka saldo
 # =============================
 
-@app.post("/inventory/increase", response_model=Product)
-def increase_stock(request: StockRequest):
-    product_id = check_product_exists(inventory, request.productCode)
-    ensure_valid_quantity(request.quantity)
-
-    inventory[product_id] = inventory[product_id].model_copy(
-        update={"stock": inventory[product_id].stock + request.quantity})
-    return inventory[product_id]
+@app.post("/inventory/increase", response_model=List[Product])
+def increase_stock(requests: List[StockRequest]):
+    updated_products = []
+    for req in requests:
+        product_id = check_product_exists(inventory, req.productCode)
+        ensure_valid_quantity(req.quantity)
+        inventory[product_id] = inventory[product_id].model_copy(
+            update={"stock": inventory[product_id].stock + req.quantity})
+        updated_products.append(inventory[product_id])
+    return updated_products
 
 @app.post("/inventory/decrease", response_model=list[Product])
 def decrease_stock(request: DecreaseStockMultipleRequest):
