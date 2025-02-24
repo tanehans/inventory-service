@@ -1,30 +1,44 @@
 import jwt
-from fastapi import Depends, HTTPException, Security
+import os
+from fastapi import Depends, HTTPException, Security, Header
 from fastapi.security import OAuth2PasswordBearer
 from starlette.status import HTTP_401_UNAUTHORIZED
 from dotenv import load_dotenv
-import os
 
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
+OVERRIDE_KEY = os.getenv("OVERRIDE_KEY") 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme), 
+    override_key: str = Header(None, alias="X-Override-Key")
+):
     """
-    Hämtar den aktuella användaren baserat på den angivna JWT-token.
-    
+    Hämtar den aktuella användaren baserat på JWT-token eller en override-nyckel.
+
     Argument:
         token (str): JWT-token som tillhandahålls av användaren.
-    
+        override_key (str, optional): En API-nyckel som kan användas för att åsidosätta JWT-verifiering.
+
     Returnerar:
         dict: En ordbok som innehåller användar-ID, e-post och roller.
-    
+
     Undantag:
         HTTPException: Om token är ogiltig, utgången eller om användar-ID inte hittas i token-payload.
     """
+
+    if override_key and override_key == OVERRIDE_KEY:
+        return {
+            "user_id": "override_admin",
+            "email": "admin@example.com",
+            "roles": ["admin"],
+        }
+
+
     credentials_exception = HTTPException(
         status_code=HTTP_401_UNAUTHORIZED,
         detail="Kunde inte validera dina uppgifter",
