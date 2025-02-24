@@ -35,7 +35,7 @@ def get_current_user(
         return {
             "user_id": "override_admin",
             "email": "admin@example.com",
-            "roles": ["admin"],
+            "role": ["admin"],
         }
 
 
@@ -53,7 +53,7 @@ def get_current_user(
         if user_id is None or email is None:
             raise credentials_exception
         
-        return {"user_id": user_id, "email": email, "roles": payload.get("roles", [])}
+        return {"user_id": user_id, "email": email, "role": payload.get("role", [])}
     
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Token har gått ut")
@@ -74,6 +74,6 @@ def get_current_admin_user(user: dict = Depends(get_current_user)):
     Returns:
         dict: Användarens information om användaren har admin-behörighet.
     """
-    if "admin" not in user["roles"]:
+    if "admin" not in user["role"]:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Åtkomst nekad")
     return user
