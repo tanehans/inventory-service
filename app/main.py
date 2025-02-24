@@ -42,6 +42,11 @@ async def read_root():
 def get_inventory():
     return [product.dict(exclude={"id"}) for product in inventory.values()]
 
+@app.get("/inventory/{productCode}", response_model=Product)
+def get_product(productCode: str):
+    product_id = check_product_exists(inventory, productCode)
+    return inventory[product_id]
+
 @app.post("/inventory", response_model=list[Product], status_code=201)
 def create_products(products: list[ProductCreate]):
     created = []
