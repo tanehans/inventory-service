@@ -1,9 +1,37 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from app.classes import  *
 from app.inventory import inventory
 from app.utils import *
+from databases import Database
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 app = FastAPI()
+
+# =============================
+#           DATABASE
+#           
+# =============================
+
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:root@host.docker.internal:5432/product-inventory")
+database = Database(DATABASE_URL)
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
+@app.get("/testConnection") # Test connection.
+async def read_root():
+    query = "SELECT * FROM products"
+    results = await database.fetch_all(query)
+    return {"results": results}
 
 # =============================
 #           INVENTORY
