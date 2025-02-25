@@ -1,3 +1,4 @@
+from databases import Database
 from fastapi import FastAPI, HTTPException
 from fastapi.openapi.utils import get_openapi
 from app.classes import  *
@@ -6,6 +7,30 @@ from app.utils import *
 from app.auth.dependencies import *
 
 app = FastAPI()
+
+# =============================
+#           DATABASE
+#           
+# =============================
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+#DATABASE_URL = "postgresql://postgres:root@host.docker.internal:5432/product-inventory" # LOCAL
+database = Database(DATABASE_URL)
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
+@app.get("/testConnection") # Test connection.
+async def read_root():
+    query = "SELECT * FROM products"
+    results = await database.fetch_all(query)
+    return {"results": results}
+
 
 def custom_openapi():
     if app.openapi_schema:
