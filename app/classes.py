@@ -13,7 +13,6 @@ class DecreaseStockMultipleRequest(BaseModel):
     items: List[StockRequest]
 
 class Product(BaseModel):
-    id: int
     productCode: str
     stock: int
 
