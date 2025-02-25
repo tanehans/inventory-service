@@ -1,37 +1,36 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
+from fastapi.openapi.utils import get_openapi
 from app.classes import  *
 from app.inventory import inventory
 from app.utils import *
-from databases import Database
-import os
-from dotenv import load_dotenv
-load_dotenv()
-
-
+from app.auth.dependencies import *
 
 app = FastAPI()
 
-# =============================
-#           DATABASE
-#           
-# =============================
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Inventory API",
+        version="1.0.0",
+        description="API for managing inventory",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:root@host.docker.internal:5432/product-inventory")
-database = Database(DATABASE_URL)
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
-@app.on_event("startup")
-async def startup():
-    await database.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
-
-@app.get("/testConnection") # Test connection.
-async def read_root():
-    query = "SELECT * FROM products"
-    results = await database.fetch_all(query)
-    return {"results": results}
+app.openapi = custom_openapi
 
 # =============================
 #           INVENTORY
@@ -47,43 +46,47 @@ def get_product(productCode: str):
     product_id = check_product_exists(inventory, productCode)
     return inventory[product_id]
 
-@app.post("/inventory", response_model=list[Product], status_code=201)
-def create_products(products: list[ProductCreate]):
-    created = []
-    for product in products:
-        check_if_product_exists(inventory, product.productCode) 
-        new_id = max(inventory.keys(), default=0) + 1
-        new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
-        inventory[new_id] = new_product
-        created.append(new_product)
-    return created
+@app.post("/inventory", response_model=Product, status_code=201)
+def create_product(
+    product: Product
+    ):
+    new_id = max(inventory.keys(), default=0) + 1  
+    new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
+    inventory[new_id] = new_product
+    return new_product
 
-@app.delete("/inventory", response_model=list[Product], status_code=200)
-def delete_products(request: ProductDeleteMultipleRequest):
-    deleted = []
-    for code in request.productCodes:
-        product_id = check_product_exists(inventory, code)
-        deleted.append(inventory.pop(product_id))
-    return deleted
+@app.delete("/inventory", status_code=200)
+def delete_product(
+    request: ProductDeleteRequest
+):
+    product_id = check_product_exists(inventory, request.productCode) 
+    deleted_product = inventory.pop(product_id)
+    return {"message": f"Produkten {deleted_product.productCode} är borttagen"}
 
 # =============================
 #        INVENTORY SALDO
 #        öka/sänka saldo
 # =============================
 
-@app.post("/inventory/increase", response_model=List[Product])
-def increase_stock(requests: List[StockRequest]):
-    updated_products = []
-    for req in requests:
-        product_id = check_product_exists(inventory, req.productCode)
-        ensure_valid_quantity(req.quantity)
-        inventory[product_id] = inventory[product_id].model_copy(
-            update={"stock": inventory[product_id].stock + req.quantity})
-        updated_products.append(inventory[product_id])
-    return updated_products
+@app.patch("/inventory/increase", response_model=Product)
+def increase_stock(
+    request: StockRequest
+):
+    product_id = check_product_exists(inventory, request.productCode)
+    ensure_valid_quantity(request.quantity)
 
-@app.post("/inventory/decrease", response_model=list[Product])
-def decrease_stock(request: DecreaseStockMultipleRequest):
+    inventory[product_id] = inventory[product_id].model_copy(update={"stock": inventory[product_id].stock + request.quantity})
+    return inventory[product_id]
+
+@app.post("/inventory/decrease", response_model=List[Product])
+def decrease_stock(
+    request: DecreaseStockMultipleRequest
+):
+    """
+    Decreases stock for multiple products.
+    """
+    updated_products = []
+
     for item in request.items:
         product_id = check_product_exists(inventory, item.productCode)
         ensure_valid_quantity(item.quantity)
@@ -110,7 +113,10 @@ def decrease_stock(request: DecreaseStockMultipleRequest):
 #     Kalla på shipping api
 # =============================
 
-def send_shipping_confirmation(email: str, products: list[Product]):
+def send_shipping_confirmation(
+        email: str, 
+        products: list[Product]
+        ):
     print(f"Skickar shippingbekräftelse till {email} för produkterna:")
     for product in products:
         print(f"{product.productCode}: {product.stock}st")
