@@ -25,12 +25,6 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-@app.get("/testConnection") # Test connection.
-async def read_root():
-    query = "SELECT * FROM products"
-    results = await database.fetch_all(query)
-    return {"results": results}
-
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
