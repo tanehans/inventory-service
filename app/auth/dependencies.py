@@ -1,22 +1,24 @@
-import jwt
 import os
-from fastapi import Depends, HTTPException, Header
+import jwt
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from starlette.status import HTTP_401_UNAUTHORIZED
 from dotenv import load_dotenv
 
-
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
-OVERRIDE_KEY = os.getenv("OVERRIDE_KEY")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/token",
+    auto_error=(os.getenv("MODE", "production") != "development")
+)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    """
-    Hämtar den nuvarande användaren baserat på JWT-token.
-    """
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+):
+
     credentials_exception = HTTPException(
         status_code=HTTP_401_UNAUTHORIZED,
         detail="Kunde inte validera dina uppgifter",
@@ -38,23 +40,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except jwt.InvalidTokenError:
         raise credentials_exception
 
-
-def get_current_admin_user(
-    user: dict = Depends(get_current_user),
-    override_key: str = Header(None, alias="X-Override-Key")
-):
-    """
-    Hämtar den nuvarande användaren och kontrollerar om användaren har admin-behörighet,
-    eller om en override-nyckel är angiven för admin-åtkomst.
-    """
-    if override_key and override_key == OVERRIDE_KEY:
-        return {
-            "user_id": "override_admin",
-            "email": "admin@example.com",
-            "role": ["admin"],
-        }
-
+def get_current_admin_user(user: dict = Depends(get_current_user)):
     if "admin" not in user["role"]:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Åtkomst nekad")
-
     return user

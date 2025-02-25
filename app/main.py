@@ -1,9 +1,36 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.openapi.utils import get_openapi
 from app.classes import  *
 from app.inventory import inventory
 from app.utils import *
+from app.auth.dependencies import *
 
 app = FastAPI()
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Inventory API",
+        version="1.0.0",
+        description="API for managing inventory",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # =============================
 #           INVENTORY
@@ -15,14 +42,18 @@ def get_inventory():
     return list(inventory.values())
 
 @app.post("/inventory", response_model=Product, status_code=201)
-def create_product(product: Product):
+def create_product(
+    product: Product
+    ):
     new_id = max(inventory.keys(), default=0) + 1  
     new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
     inventory[new_id] = new_product
     return new_product
 
 @app.delete("/inventory", status_code=200)
-def delete_product(request: ProductDeleteRequest):
+def delete_product(
+    request: ProductDeleteRequest
+):
     product_id = check_product_exists(inventory, request.productCode) 
     deleted_product = inventory.pop(product_id)
     return {"message": f"Produkten {deleted_product.productCode} är borttagen"}
@@ -33,16 +64,24 @@ def delete_product(request: ProductDeleteRequest):
 # =============================
 
 @app.patch("/inventory/increase", response_model=Product)
-def increase_stock(request: StockRequest):
+def increase_stock(
+    request: StockRequest
+):
     product_id = check_product_exists(inventory, request.productCode)
     ensure_valid_quantity(request.quantity)
 
     inventory[product_id] = inventory[product_id].model_copy(update={"stock": inventory[product_id].stock + request.quantity})
     return inventory[product_id]
 
-@app.post("/inventory/decrease", response_model=list[Product])
-def decrease_stock(request: DecreaseStockMultipleRequest):
+@app.post("/inventory/decrease", response_model=List[Product])
+def decrease_stock(
+    request: DecreaseStockMultipleRequest
+):
+    """
+    Decreases stock for multiple products.
+    """
     updated_products = []
+
     for item in request.items:
         product_id = check_product_exists(inventory, item.productCode)
         ensure_valid_quantity(item.quantity)
@@ -62,7 +101,10 @@ def decrease_stock(request: DecreaseStockMultipleRequest):
 #     Kalla på shipping api
 # =============================
 
-def send_shipping_confirmation(email: str, products: list[Product]):
+def send_shipping_confirmation(
+        email: str, 
+        products: list[Product]
+        ):
     print(f"Skickar shippingbekräftelse till {email} för produkterna:")
     for product in products:
         print(f"{product.productCode}: {product.stock}st")
