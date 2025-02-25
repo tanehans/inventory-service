@@ -23,7 +23,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    await database.disconnect()
+    await database.disconnect() 
 
 def custom_openapi():
     if app.openapi_schema:
@@ -65,24 +65,31 @@ def get_product_stock(productCode: str, user: dict = Depends(get_current_user)):
     product = inventory[product_id]
     return {"productCode": product.productCode, "stock": product.stock}
 
-@app.post("/inventory", response_model=Product, status_code=201, tags=["Inventory Management"])
-def create_product(
-    product: Product,
-    admin: dict = Depends(get_current_admin_user)
-    ):
-    new_id = max(inventory.keys(), default=0) + 1  
-    new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
-    inventory[new_id] = new_product
-    return new_product
-
-@app.delete("/inventory", status_code=200, tags=["Inventory Management"])
-def delete_product(
-    request: ProductDeleteRequest,
+@app.post("/inventory", response_model=List[Product], status_code=201, tags=["Inventory Management"])
+def create_products(
+    products: List[Product],
     admin: dict = Depends(get_current_admin_user)
 ):
-    product_id = check_product_exists(inventory, request.productCode) 
-    deleted_product = inventory.pop(product_id)
-    return {"message": f"Produkten {deleted_product.productCode} är borttagen"}
+    new_products = []
+    for product in products:
+        new_id = max(inventory.keys(), default=0) + 1  
+        new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
+        inventory[new_id] = new_product
+        new_products.append(new_product)
+    return new_products
+
+@app.delete("/inventory", status_code=200, tags=["Inventory Management"])
+def delete_products(
+    requests: List[ProductDeleteRequest],
+    admin: dict = Depends(get_current_admin_user)
+):
+    messages = []
+    for request in requests:
+        product_id = check_product_exists(inventory, request.productCode)
+        deleted_product = inventory.pop(product_id)
+        messages.append(f"Produkten {deleted_product.productCode} är borttagen")
+    return {"message": messages}
+
 
 # =============================
 #        INVENTORY SALDO
@@ -124,7 +131,6 @@ def decrease_stock(
 
     send_shipping_confirmation(request.email, updated_products)
     return updated_products
-
 
 # =============================
 #           SHIPPING
