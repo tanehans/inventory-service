@@ -31,7 +31,6 @@ async def read_root():
     results = await database.fetch_all(query)
     return {"results": results}
 
-
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -55,18 +54,24 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-app.openapi = custom_openapi
+app.openapi = custom_openapi 
 
 # =============================
 #           INVENTORY
 #         get/post/delete      
 # =============================
 
-@app.get("/inventory", response_model=list[Product])
+@app.get("/inventory", response_model=list[Product], tags=["Inventory"])
 def get_inventory(user: dict = Depends(get_current_user)):
     return list(inventory.values())
 
-@app.post("/inventory", response_model=Product, status_code=201)
+@app.get("/inventory/{productCode}", tags=["Inventory"])
+def get_product_stock(productCode: str, user: dict = Depends(get_current_user)):
+    product_id = check_product_exists(inventory, productCode)
+    product = inventory[product_id]
+    return {"productCode": product.productCode, "stock": product.stock}
+
+@app.post("/inventory", response_model=Product, status_code=201, tags=["Inventory Management"])
 def create_product(
     product: Product,
     admin: dict = Depends(get_current_admin_user)
@@ -76,7 +81,7 @@ def create_product(
     inventory[new_id] = new_product
     return new_product
 
-@app.delete("/inventory", status_code=200)
+@app.delete("/inventory", status_code=200, tags=["Inventory Management"])
 def delete_product(
     request: ProductDeleteRequest,
     admin: dict = Depends(get_current_admin_user)
@@ -90,7 +95,7 @@ def delete_product(
 #        öka/sänka saldo
 # =============================
 
-@app.patch("/inventory/increase", response_model=Product)
+@app.post("/inventory/increase", response_model=Product, tags=["Stock Management"])
 def increase_stock(
     request: StockRequest,
     admin: dict = Depends(get_current_admin_user)
@@ -101,7 +106,7 @@ def increase_stock(
     inventory[product_id] = inventory[product_id].model_copy(update={"stock": inventory[product_id].stock + request.quantity})
     return inventory[product_id]
 
-@app.post("/inventory/decrease", response_model=List[Product])
+@app.post("/inventory/decrease", response_model=List[Product], tags=["Stock Management"])
 def decrease_stock(
     request: DecreaseStockMultipleRequest, 
     user: dict = Depends(get_current_user)
