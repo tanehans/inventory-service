@@ -37,18 +37,14 @@ app.openapi = custom_openapi
 #         get/post/delete      
 # =============================
 
-@app.get("/inventory")
-def get_inventory():
-    return [product.dict(exclude={"id"}) for product in inventory.values()]
-
-@app.get("/inventory/{productCode}", response_model=Product)
-def get_product(productCode: str):
-    product_id = check_product_exists(inventory, productCode)
-    return inventory[product_id]
+@app.get("/inventory", response_model=list[Product])
+def get_inventory(user: dict = Depends(get_current_user)):
+    return list(inventory.values())
 
 @app.post("/inventory", response_model=Product, status_code=201)
 def create_product(
-    product: Product
+    product: Product,
+    admin: dict = Depends(get_current_admin_user)
     ):
     new_id = max(inventory.keys(), default=0) + 1  
     new_product = Product(id=new_id, productCode=product.productCode, stock=product.stock)
@@ -57,7 +53,8 @@ def create_product(
 
 @app.delete("/inventory", status_code=200)
 def delete_product(
-    request: ProductDeleteRequest
+    request: ProductDeleteRequest,
+    admin: dict = Depends(get_current_admin_user)
 ):
     product_id = check_product_exists(inventory, request.productCode) 
     deleted_product = inventory.pop(product_id)
@@ -70,7 +67,8 @@ def delete_product(
 
 @app.patch("/inventory/increase", response_model=Product)
 def increase_stock(
-    request: StockRequest
+    request: StockRequest,
+    admin: dict = Depends(get_current_admin_user)
 ):
     product_id = check_product_exists(inventory, request.productCode)
     ensure_valid_quantity(request.quantity)
@@ -80,33 +78,29 @@ def increase_stock(
 
 @app.post("/inventory/decrease", response_model=List[Product])
 def decrease_stock(
-    request: DecreaseStockMultipleRequest
+    request: DecreaseStockMultipleRequest, 
+    user: dict = Depends(get_current_user)
 ):
     """
     Decreases stock for multiple products.
+    Requires admin authentication via JWT.
     """
     updated_products = []
 
     for item in request.items:
         product_id = check_product_exists(inventory, item.productCode)
         ensure_valid_quantity(item.quantity)
-        
+
         product = inventory[product_id]
         if product.stock < item.quantity:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Inte tillräckligt med lagersaldo för {item.productCode}. Tillgängligt: {product.stock}, Efterfrågat: {item.quantity}"
-            )
+            raise HTTPException(status_code=400, detail=f"Inte tillräckligt med lagersaldo för {item.productCode}")
 
-    updated_products = []
-    for item in request.items:
-        product_id = check_product_exists(inventory, item.productCode)
-        product = inventory[product_id]
         inventory[product_id] = product.model_copy(update={"stock": product.stock - item.quantity})
         updated_products.append(inventory[product_id])
 
     send_shipping_confirmation(request.email, updated_products)
     return updated_products
+
 
 # =============================
 #           SHIPPING
@@ -115,7 +109,8 @@ def decrease_stock(
 
 def send_shipping_confirmation(
         email: str, 
-        products: list[Product]
+        products: list[Product],
+        user: dict = Depends(get_current_user)
         ):
     print(f"Skickar shippingbekräftelse till {email} för produkterna:")
     for product in products:
