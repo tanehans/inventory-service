@@ -1,8 +1,0 @@
-fastapi[standard]
-pydantic
-pytest
-pyjwt
-passlib[bcrypt]
-python-jose[cryptography]
-asyncpg
-databases
